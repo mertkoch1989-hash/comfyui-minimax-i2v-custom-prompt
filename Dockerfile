@@ -1,7 +1,6 @@
 FROM runpod/worker-comfyui:5.8.4-base
 
 ENV COMFYUI_PATH=/ComfyUI
-
 WORKDIR /ComfyUI
 
 # ============================================================
@@ -16,6 +15,7 @@ RUN git clone --depth 1 \
     https://github.com/rgthree/rgthree-comfy.git \
     /ComfyUI/custom_nodes/rgthree-comfy
 
+# VideoHelperSuite
 RUN git clone --depth 1 \
     https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git \
     /ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite
@@ -56,6 +56,37 @@ RUN for f in /ComfyUI/custom_nodes/*/requirements.txt; do \
         echo "Installing $f"; \
         pip install --no-cache-dir -r "$f" || exit 1; \
     done
+
+# ============================================================
+# VERIFY REQUIRED NODES
+# ============================================================
+
+RUN test -f /ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/__init__.py
+
+RUN test -f /ComfyUI/custom_nodes/ComfyUI-Spectrum-MiniMax-H3/__init__.py
+
+RUN python - <<'PY'
+import sys
+sys.path.insert(0, "/ComfyUI")
+
+import importlib.util
+
+spec = importlib.util.spec_from_file_location(
+    "videohelpersuite",
+    "/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/__init__.py"
+)
+
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+assert "VHS_VideoCombine" in module.NODE_CLASS_MAPPINGS, \
+    "VHS_VideoCombine NOT FOUND"
+
+print("========================================")
+print("VHS_VideoCombine OK")
+print("VideoHelperSuite loaded successfully")
+print("========================================")
+PY
 
 # ============================================================
 # RUNPOD NETWORK VOLUME
