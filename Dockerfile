@@ -1,86 +1,87 @@
 FROM runpod/worker-comfyui:5.8.4-base
 
-ENV COMFYUI_PATH=/ComfyUI
-WORKDIR /ComfyUI
+WORKDIR /comfyui
 
 # ============================================================
-# MiniMax H3 - CUSTOM NODES
+# CUSTOM NODES
 # ============================================================
 
 RUN git clone --depth 1 \
     https://github.com/kijai/ComfyUI-KJNodes.git \
-    /ComfyUI/custom_nodes/ComfyUI-KJNodes
+    /comfyui/custom_nodes/ComfyUI-KJNodes
 
 RUN git clone --depth 1 \
     https://github.com/rgthree/rgthree-comfy.git \
-    /ComfyUI/custom_nodes/rgthree-comfy
+    /comfyui/custom_nodes/rgthree-comfy
 
-# VideoHelperSuite
 RUN git clone --depth 1 \
     https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git \
-    /ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite
+    /comfyui/custom_nodes/ComfyUI-VideoHelperSuite
 
 RUN git clone --depth 1 \
     https://github.com/xmarre/ComfyUI-Spectrum-MiniMax-H3.git \
-    /ComfyUI/custom_nodes/ComfyUI-Spectrum-MiniMax-H3
+    /comfyui/custom_nodes/ComfyUI-Spectrum-MiniMax-H3
 
 RUN git clone --depth 1 \
     https://github.com/Hearmeman24/ComfyUI-MiniMaxRefPack.git \
-    /ComfyUI/custom_nodes/ComfyUI-MiniMaxRefPack
+    /comfyui/custom_nodes/ComfyUI-MiniMaxRefPack
 
 RUN git clone --depth 1 \
     https://github.com/Hearmeman24/ComfyUI-HearmemanAI-Upscale.git \
-    /ComfyUI/custom_nodes/ComfyUI-HearmemanAI-Upscale
+    /comfyui/custom_nodes/ComfyUI-HearmemanAI-Upscale
 
 RUN git clone --depth 1 \
     https://github.com/Hearmeman24/ComfyUI-LoRABlockSurgeon.git \
-    /ComfyUI/custom_nodes/ComfyUI-LoRABlockSurgeon
+    /comfyui/custom_nodes/ComfyUI-LoRABlockSurgeon
 
 RUN git clone --depth 1 \
     https://github.com/Hearmeman24/ComfyUI-OpenRouter-Simple.git \
-    /ComfyUI/custom_nodes/ComfyUI-OpenRouter-Simple
+    /comfyui/custom_nodes/ComfyUI-OpenRouter-Simple
 
 RUN git clone --depth 1 \
     https://github.com/gabe-init/ComfyUI-Openrouter_node.git \
-    /ComfyUI/custom_nodes/ComfyUI-Openrouter_node
+    /comfyui/custom_nodes/ComfyUI-Openrouter_node
+
+# ============================================================
+# COMFYUI MANAGER
+# ============================================================
 
 RUN git clone --depth 1 \
     https://github.com/ltdrdata/ComfyUI-Manager.git \
-    /ComfyUI/custom_nodes/comfyui-manager
+    /comfyui/custom_nodes/comfyui-manager
 
 # ============================================================
 # NODE DEPENDENCIES
 # ============================================================
 
-RUN for f in /ComfyUI/custom_nodes/*/requirements.txt; do \
+RUN for f in /comfyui/custom_nodes/*/requirements.txt; do \
         echo "Installing $f"; \
         pip install --no-cache-dir -r "$f" || exit 1; \
     done
 
 # ============================================================
-# VERIFY REQUIRED NODES
+# VERIFY VIDEOHELPERSUITE
 # ============================================================
 
-RUN test -f /ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/__init__.py
-
-RUN test -f /ComfyUI/custom_nodes/ComfyUI-Spectrum-MiniMax-H3/__init__.py
+RUN test -f /comfyui/custom_nodes/ComfyUI-VideoHelperSuite/__init__.py
 
 RUN python - <<'PY'
 import sys
-sys.path.insert(0, "/ComfyUI")
+sys.path.insert(0, "/comfyui")
+
+spec_path = "/comfyui/custom_nodes/ComfyUI-VideoHelperSuite/__init__.py"
 
 import importlib.util
 
 spec = importlib.util.spec_from_file_location(
     "videohelpersuite",
-    "/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/__init__.py"
+    spec_path
 )
 
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-assert "VHS_VideoCombine" in module.NODE_CLASS_MAPPINGS, \
-    "VHS_VideoCombine NOT FOUND"
+assert "VHS_VideoCombine" in module.NODE_CLASS_MAPPINGS
 
 print("========================================")
 print("VHS_VideoCombine OK")
@@ -89,10 +90,10 @@ print("========================================")
 PY
 
 # ============================================================
-# RUNPOD NETWORK VOLUME
+# NETWORK VOLUME
 # ============================================================
 
-COPY extra_model_paths.yaml /ComfyUI/extra_model_paths.yaml
+COPY extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 
 # ============================================================
 # SERVER
